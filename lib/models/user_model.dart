@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 class MyUser {
   final String id;
   final String email;
@@ -17,6 +19,15 @@ class MyUser {
       email: googleData['email'],
       displayName: googleData['displayName'],
       profilePictureUrl: googleData['profilePictureUrl'],
+    );
+  }
+
+  factory MyUser.fromFirebaseUser(User firebaseUser) {
+    return MyUser(
+      id: firebaseUser.uid,
+      email: firebaseUser.email ?? '',
+      displayName: firebaseUser.displayName ?? '',
+      profilePictureUrl: firebaseUser.photoURL,
     );
   }
 

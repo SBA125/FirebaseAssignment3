@@ -1,5 +1,7 @@
+import 'package:firebase_assignment/providers/authentication_provider.dart';
 import 'package:firebase_assignment/repositories/authentication_repository.dart';
 import 'package:firebase_assignment/screens/home_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_assignment/services/authentication_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,14 +12,21 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final AuthenticationService authenticationService = AuthenticationService();
   final AuthenticationRepository authenticationRepository = AuthenticationRepository(authenticationService);
-  runApp(MyApp(authenticationRepository: authenticationRepository));
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        authenticationRepositoryProvider.overrideWithValue(authenticationRepository),
+      ],
+      child: MyApp(authenticationRepository: authenticationRepository,),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   final AuthenticationRepository authenticationRepository;
   const MyApp({super.key, required this.authenticationRepository});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,30 +38,20 @@ class MyApp extends StatelessWidget {
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
       initialRoute: '/',
       routes: {
-        '/home': (context) => HomeScreen(authenticationRepository: authenticationRepository,),
+        '/home': (context) => const HomeScreen(),
       },
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends ConsumerWidget {
   const MyHomePage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  final AuthenticationService authenticationService = AuthenticationService();
-
-  void _navigateToHomeScreen() {
-    Navigator.pushReplacementNamed(context, '/home');
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authNotifier = ref.watch(authenticationNotifierProvider.notifier);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -72,17 +71,27 @@ class _MyHomePageState extends State<MyHomePage> {
                 width: 100,
                 child: FloatingActionButton(
                   onPressed: () async {
-                    // Sign in with Google when the button is pressed
-                    final user = await authenticationService.signInWithGoogle();
-                    if (user != null) {
-                      // Navigate to the home screen upon successful login
-                      _navigateToHomeScreen();
-                    } else {
-                      // Handle login failure
-                      _showAlertDialog('Error', 'Failed to sign in with Google.');
+                    try {
+                      await authNotifier.signInWithGoogle();
+                      final currentUser = ref.watch(authenticationNotifierProvider).user;
+                      if (currentUser != null) {
+                        if(context.mounted) {
+                          Navigator.pushReplacementNamed(context, '/home');
+                        }
+                      } else {
+                        if(context.mounted) {
+                          _showAlertDialog(context, 'Error', 'Failed to sign in with Google');
+                        }
+                      }
+                    } catch (e) {
+                      // Handle any exceptions that occur during sign-in
+                      print('Error signing in with Google: $e');
+                      if(context.mounted) {
+                        _showAlertDialog(context, 'Error', 'Failed to sign in with Google: $e');
+                      }
                     }
                   },
-                  child: const Text('Start'),
+                  child: const Text('Gmail Login'),
                 ),
               ),
             ],
@@ -92,7 +101,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _showAlertDialog(String title, String message) {
+  void _showAlertDialog(BuildContext context, String title, String message) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -108,5 +117,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
 
 

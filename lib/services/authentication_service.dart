@@ -1,8 +1,10 @@
+import 'package:firebase_assignment/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthenticationService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   Future<User?> signInWithGoogle() async {
     try {
@@ -26,13 +28,15 @@ class AuthenticationService {
 
   Future<void> signOut() async {
     await _auth.signOut();
+    await _googleSignIn.signOut();
   }
 
   User? getCurrentUser() {
     return _auth.currentUser;
   }
 
-  String? getUserDisplayName(User user) {
+  String? getUserDisplayName(MyUser user) {
     return user.displayName;
   }
+
 }

@@ -1,3 +1,4 @@
+import 'package:firebase_assignment/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../services/authentication_service.dart';
@@ -22,12 +23,13 @@ class AuthenticationRepository {
     await _authenticationService.signOut();
   }
 
+
   // Get current user
   User? getCurrentUser() {
     return _authenticationService.getCurrentUser();
   }
 
-  String? getUserDisplayName(User user) {
+  String? getUserDisplayName(MyUser user) {
     return _authenticationService.getUserDisplayName(user);
   }
 }
